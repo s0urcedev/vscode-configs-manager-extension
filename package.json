@@ -2,7 +2,7 @@
   "name": "vscode-configs-manager-extension",
 	"displayName": "VSCCM",
 	"description": "VSCode extension for VSCCM",
-	"icon": "https://github.com/s0urcedev/vscode-configs-manager-extension/icon.png",
+	"icon": "icon.png",
 	"version": "1.0.0",
 	"publisher": "s0urcecom",
 	"repository": {

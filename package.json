@@ -3,7 +3,7 @@
   "displayName": "VSCCM",
   "description": "VSCode extension for VSCCM",
   "icon": "icon.png",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "s0urcecom",
   "repository": {
     "type": "git",

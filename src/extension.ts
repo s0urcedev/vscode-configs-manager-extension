@@ -3,17 +3,17 @@ import { execSync } from 'child_process';
 import * as path from 'path';
 import AdmZip = require('adm-zip');
 
-function getList(): string[] | undefined {
+function getList(installedVSCCMUbuntuLocally: boolean): string[] | undefined {
 	if (vscode.workspace.workspaceFolders === undefined) {
 		return undefined;
 	}
-	let stdoutText: string = execSync(`vsccm list --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath}`).toString();	
+	let stdoutText: string = execSync(`${installedVSCCMUbuntuLocally ? "./" : ""}vsccm list --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath}`).toString();	
 	let list: string[] = stdoutText.split("\n").filter(x => x[0] === "|").map(x => x.slice(2, x[x.length - 1] === "\r" ? x.length - 1 : x.length));
 	return list;
 }
 
-function getInstallList(): string[] {
-	let stdoutText: string = execSync("vsccm install list").toString();	
+function getInstallList(installedVSCCMUbuntuLocally: boolean): string[] {
+	let stdoutText: string = execSync(`${installedVSCCMUbuntuLocally ? "./" : ""}vsccm install list`).toString();	
 	let list: string[] = stdoutText.split("\n").filter(x => x[0] === "|").map(x => x.slice(2, x[x.length - 1] === "\r" ? x.length - 1 : x.length));
 	return list;
 }
@@ -22,6 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "vscode-configs-manager-extension" is now active!');
 
 	let installedVSCCM: boolean;
+	let installedVSCCMUbuntuLocally: boolean;
 
 	try {
 		execSync("vsccm");
@@ -31,21 +32,36 @@ export function activate(context: vscode.ExtensionContext) {
 		installedVSCCM = false;
 	}
 
+	if (!installedVSCCM){
+		try {
+			execSync("./vsccm");
+			installedVSCCMUbuntuLocally = true;
+		}
+		catch {
+			installedVSCCMUbuntuLocally = false;
+		}
+	}
+
 	let commndSetup = vscode.commands.registerCommand('vscode-configs-manager-extension.setup', () => {
-		if (installedVSCCM) {
+		if (installedVSCCM || installedVSCCMUbuntuLocally) {
 			vscode.window.showWarningMessage("VSCCM is already installed");
 		}
 		else {
 			let zip: AdmZip = new AdmZip(`${path.resolve(__dirname, '..')}/base-build.zip`);
 			zip.extractAllTo(process.cwd(), true);
 			vscode.window.showInformationMessage("VSCCM installed");
-			installedVSCCM = true;
+			if (process.platform === 'win32') {
+				installedVSCCM = true;
+			}
+			else {
+				installedVSCCMUbuntuLocally = true;
+			}
 		}
 	});
 
 	let commandList = vscode.commands.registerCommand('vscode-configs-manager-extension.list', () => {
-		if (installedVSCCM) {
-			let list: string[] | undefined = getList();
+		if (installedVSCCM || installedVSCCMUbuntuLocally) {
+			let list: string[] | undefined = getList(installedVSCCMUbuntuLocally);
 			if (list === undefined) {
 				vscode.window.showErrorMessage("You haven't opened folder");
 			}
@@ -60,12 +76,12 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	let commandRemove = vscode.commands.registerCommand('vscode-configs-manager-extension.remove', () => {
-		if (installedVSCCM) {
+		if (installedVSCCM || installedVSCCMUbuntuLocally) {
 			if (vscode.workspace.workspaceFolders === undefined) {
 				vscode.window.showErrorMessage("You haven't opened folder");
 			}
 			else {
-				vscode.window.showInformationMessage(execSync(`vsccm remove --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath}`).toString());	
+				vscode.window.showInformationMessage(execSync(`${installedVSCCMUbuntuLocally ? "./" : ""}vsccm remove --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath}`).toString());	
 			}
 		}
 		else {
@@ -75,12 +91,12 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	let commandClear = vscode.commands.registerCommand('vscode-configs-manager-extension.clear', () => {
-		if (installedVSCCM) {
+		if (installedVSCCM || installedVSCCMUbuntuLocally) {
 			if (vscode.workspace.workspaceFolders === undefined) {
 				vscode.window.showErrorMessage("You haven't opened folder");
 			}
 			else {
-				vscode.window.showInformationMessage(execSync(`vsccm clear --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath}`).toString());	
+				vscode.window.showInformationMessage(execSync(`${installedVSCCMUbuntuLocally ? "./" : ""}vsccm clear --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath}`).toString());	
 			}
 		}
 		else {
@@ -90,8 +106,8 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	
 	let commandInstallList = vscode.commands.registerCommand('vscode-configs-manager-extension.installList', () => {
-		if (installedVSCCM) {
-			vscode.window.showInformationMessage(`Your configs: ${getInstallList().join(", ")}`);
+		if (installedVSCCM || installedVSCCMUbuntuLocally) {
+			vscode.window.showInformationMessage(`Your configs: ${getInstallList(installedVSCCMUbuntuLocally).join(", ")}`);
 		}
 		else {
 			vscode.window.showErrorMessage("VSCCM is not installed");
@@ -100,12 +116,12 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	let install = vscode.commands.registerCommand('vscode-configs-manager-extension.install', () => {
-		if (installedVSCCM) {
+		if (installedVSCCM || installedVSCCMUbuntuLocally) {
 			if (vscode.workspace.workspaceFolders === undefined) {
 				vscode.window.showErrorMessage("You haven't opened folder");
 			}
 			else {
-				let options: vscode.QuickPickItem[] = getInstallList().map((label: string) => ({label}));
+				let options: vscode.QuickPickItem[] = getInstallList(installedVSCCMUbuntuLocally).map((label: string) => ({label}));
 				let quickPick: vscode.QuickPick<vscode.QuickPickItem> = vscode.window.createQuickPick();
 				quickPick.items = options;
 				quickPick.onDidChangeSelection(([{label}]) => {
@@ -114,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 						vscode.window.showErrorMessage("You haven't opened folder");
 					}
 					else {
-						let stdoutText: string = execSync(`vsccm install --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath} ${label}`).toString();
+						let stdoutText: string = execSync(`${installedVSCCMUbuntuLocally ? "./" : ""}vsccm install --workfolder=${vscode.workspace.workspaceFolders[0].uri.fsPath} ${label}`).toString();
 						for (let text of stdoutText.split("\n")) {
 							vscode.window.showInformationMessage(text);
 						}

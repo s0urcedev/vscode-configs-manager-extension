@@ -54,6 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
 				installedVSCCM = true;
 			}
 			else {
+				execSync('chmod +x vsccm');
 				installedVSCCMUbuntuLocally = true;
 			}
 		}
